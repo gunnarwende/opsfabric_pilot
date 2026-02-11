@@ -14,7 +14,10 @@ export const runtime = "nodejs";
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.formData().catch(() => null) ?? await request.json().catch(() => ({}));
+    const contentType = request.headers.get("content-type") ?? "";
+    const body = contentType.includes("application/json")
+      ? await request.json().catch(() => ({}))
+      : await request.formData().catch(() => null) ?? await request.json().catch(() => ({}));
 
     // Extract caller info (supports both form data and JSON)
     const fromNumber = (body instanceof FormData ? body.get("From") : body.From) as string;
