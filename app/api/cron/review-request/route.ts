@@ -12,10 +12,10 @@ export const runtime = "nodejs";
  * Query tickets: status=DONE AND job_completed_at + review_delay < now() AND review_request_sent_at IS NULL
  */
 export async function POST(request: NextRequest) {
-  // Simple auth check (use a secret in production)
+  // Auth check: always require CRON_SECRET
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
