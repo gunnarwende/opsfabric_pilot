@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getCustomerBySlug } from "@/config/customers/doerfler-ag";
+import { getCustomerBySlug } from "@/lib/customer";
 import { Hero } from "@/components/sections/hero";
 import { TrustBar } from "@/components/sections/trust-bar";
 import { ServicesGrid } from "@/components/sections/services-grid";
@@ -13,7 +13,7 @@ interface PageProps {
 
 export default async function HomePage({ params }: PageProps) {
   const { slug } = await params;
-  const customer = getCustomerBySlug(slug);
+  const customer = await getCustomerBySlug(slug);
 
   if (!customer) {
     notFound();

@@ -141,7 +141,7 @@ Bitte schnellstmöglich bearbeiten.
 | **Sprache** | Deutsch (Sie-Form), Schweizer Konventionen |
 | **Variablen** | Immer in `{geschweiften_klammern}`, werden serverseitig ersetzt |
 | **Notfall-Hinweis** | Bei urgency=HIGH immer Sicherheitshinweis (Haupthahn, 118) |
-| **Rückruf-Nummer** | Immer die Betriebsnummer, nicht die Twilio-Nummer |
+| **Rückruf-Nummer** | Immer die Betriebsnummer, nicht die System-SMS-Nummer |
 | **Opt-Out** | Nicht nötig für transaktionale SMS (DSG), aber: nie Werbung senden |
 | **Quiet Hours** | Keine SMS zwischen 21:00–07:00, ausser urgency=HIGH |
 

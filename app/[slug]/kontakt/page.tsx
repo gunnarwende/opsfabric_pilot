@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Phone, Mail, MapPin, Clock, ArrowRight, Navigation } from "lucide-react";
-import { getCustomerBySlug } from "@/config/customers/doerfler-ag";
+import { getCustomerBySlug } from "@/lib/customer";
 import { formatPhoneDisplay, formatPhoneTel } from "@/lib/phone";
 import type { Metadata } from "next";
 
@@ -11,7 +11,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const customer = getCustomerBySlug(slug);
+  const customer = await getCustomerBySlug(slug);
   if (!customer) return {};
   return {
     title: `Kontakt — ${customer.name}`,
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function KontaktPage({ params }: PageProps) {
   const { slug } = await params;
-  const customer = getCustomerBySlug(slug);
+  const customer = await getCustomerBySlug(slug);
   if (!customer) notFound();
 
   const cfg = customer.config;

@@ -4,182 +4,197 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OpsFabric is a customer operations platform (SaaS) for Swiss craftsmen businesses (Handwerk), specifically targeting the plumbing, heating, and roofing trades in the Zürichsee-Süd region. The pilot customer is Dörfler AG.
+**OpsFabric** is a modular customer operations platform (SaaS) by **FlowSight GmbH** for local businesses in Switzerland. It automates lead capture, customer communication, and reputation management.
 
-**Key Business Logic:**
-- Two customer acquisition channels: Website Wizard (Säule 1) and Missed Call Recovery (Säule 2)
-- Multi-tenant architecture from day 1 (`customer_id` in all data models)
-- Shared operations layer handles: tickets, SLA tracking, confirmations, lifecycle messaging, and review requests
-- German market focus with Swiss phone numbers (+41), SMS via Twilio, Supabase EU region
+**Target Market:** Local service businesses — starting with Handwerk (plumbing, heating, roofing) in Zürichsee-Süd, expanding to Gastro, Beauty, and other local trades.
 
-## Documentation Structure
+**Business Model:** Setup fee (website creation) + monthly subscription (MRR) for the operations platform.
 
-**Critical:** This project is documentation-first. Before implementing any feature, read the relevant docs:
-- `docs/00_Index.md` — Overall project structure, phases, dependencies
-- `docs/02_Shared_Ops_Layer.md` — Core ticket system, SLA, routing, review engine
-- `docs/03_Saule_1_Web_Intake.md` — Website wizard blueprint
-- `docs/04_Saule_2_Missed_Call.md` — Missed call recovery logic
-- `docs/06_Tech_Architecture.md` — Stack, database schema, API routes, project structure
-- `docs/08_SMS_Templates.md` — All SMS templates with variable references
-- `docs/09_Wizard_UI_Texte.md` — UI text for wizard flows
+**Pilot Customer:** Dörfler AG (doerfler-ag) — live at opsfabricpilot.vercel.app
 
-## Stack & Tools
+**Key Architecture Principles:**
+- Multi-tenant from day 1 (`customer_id` in all data models)
+- Modular: each feature (website, missed-call, review-engine) can be enabled/disabled per customer
+- Provider-agnostic SMS layer (console for dev, eCall.ch for production)
+- Customer config stored in Supabase `customers.config` JSONB — no hardcoded customer data in code
+- German UI/docs, English code
 
-- **Frontend:** Next.js 14+ App Router, TypeScript, Tailwind CSS
-- **Backend:** Supabase (Postgres, Auth, Edge Functions with Deno), Vercel Edge Middleware
-- **SMS:** Twilio (for Swiss numbers)
-- **Hosting:** Vercel (auto-deploy from `main`)
-- **Region:** Supabase EU West (Frankfurt) for GDPR/DSG compliance
+## Stack & Versions
 
-## Project Structure (Target)
+- **Runtime:** Next.js 16 (App Router), React 19, TypeScript
+- **Styling:** Tailwind CSS 4 (with `@tailwindcss/postcss`, `@theme` directive)
+- **Database:** Supabase (Postgres, EU Frankfurt for GDPR/DSG compliance)
+- **Icons:** Lucide React
+- **SMS:** Provider-agnostic (`lib/sms/provider.ts`). Dev: console. Production: eCall.ch
+- **Hosting:** Vercel (auto-deploy from `main` branch)
+- **Domain:** flowsight.ch (FlowSight GmbH). Customer domains: `{customer}.flowsight.ch` or custom domain
+
+## Project Structure (Actual)
 
 ```
-opsfabric-pilot/
-├── apps/web/                          # Next.js App
-│   ├── app/
-│   │   ├── [slug]/                    # Dynamic customer pages
-│   │   │   ├── page.tsx               # Homepage
-│   │   │   ├── anfrage/               # Wizard
-│   │   │   ├── datenschutz/           # Privacy policy
-│   │   │   └── impressum/             # Legal notice
-│   │   ├── dashboard/                 # Customer dashboard (auth-protected)
-│   │   └── api/
-│   │       ├── ticket/                # POST: Create ticket
-│   │       ├── webhook/
-│   │       │   ├── twilio-call/       # Missed call handler
-│   │       │   └── twilio-sms/        # SMS reply handler
-│   │       └── cron/
-│   │           └── review-request/    # Review engine
-│   ├── components/
-│   │   ├── wizard/                    # Wizard steps
-│   │   ├── proof/                     # Social proof blocks
-│   │   └── ui/                        # Reusable UI components
-│   ├── lib/
-│   │   ├── supabase.ts                # Supabase client
-│   │   ├── twilio.ts                  # Twilio helper
-│   │   ├── sms-templates.ts           # Template functions
-│   │   └── types.ts                   # TypeScript types
-│   └── config/customers/              # Customer configs (static, until DB-driven)
+opsfabric_pilot/
+├── app/
+│   ├── [slug]/                        # Dynamic customer pages
+│   │   ├── page.tsx                   # Homepage
+│   │   ├── layout.tsx                 # Customer layout (header, footer, floating CTA)
+│   │   ├── anfrage/page.tsx           # Wizard intake
+│   │   ├── kontakt/page.tsx           # Contact page
+│   │   ├── leistungen/page.tsx        # Services overview
+│   │   ├── leistungen/[service]/page.tsx  # Service detail
+│   │   ├── datenschutz/page.tsx       # Privacy policy (DSG)
+│   │   └── impressum/page.tsx         # Legal notice
+│   ├── api/
+│   │   ├── ticket/route.ts            # POST: Create/update ticket
+│   │   ├── webhook/
+│   │   │   ├── missed-call/route.ts   # Missed call webhook (form-encoded + JSON)
+│   │   │   └── sms-reply/route.ts     # SMS reply webhook (1/2/3/freetext)
+│   │   └── cron/
+│   │       └── review-request/route.ts # Review engine (requires CRON_SECRET)
+│   ├── page.tsx                       # Root redirect (configurable via DEFAULT_CUSTOMER_SLUG)
+│   ├── layout.tsx                     # Global layout (Inter font, lang="de")
+│   └── globals.css                    # Tailwind v4 design system
+│
+├── components/
+│   ├── layout/                        # Header, Footer, FloatingCta
+│   ├── sections/                      # Hero, ServicesGrid, TrustBar, Heritage, Reviews, CtaSection
+│   └── wizard/                        # WizardContainer, FlowSelector, WizardSteps, ThankYou
+│
+├── config/
+│   └── customers/
+│       └── doerfler-ag.ts             # LEGACY: static config (migrating to Supabase)
+│
+├── lib/
+│   ├── types.ts                       # All TypeScript types and enums
+│   ├── supabase.ts                    # Supabase client (public + admin/service-role)
+│   ├── phone.ts                       # Swiss E.164 normalization, validation, dedupe keys
+│   ├── utils.ts                       # cn(), isQuietHours(), calculateSlaDeadline()
+│   └── sms/
+│       ├── provider.ts                # SMS provider abstraction (Console, eCall)
+│       └── templates.ts               # All SMS templates (German, Sie-Form)
+│
 ├── supabase/
-│   ├── migrations/                    # SQL migrations
-│   └── functions/                     # Edge Functions
-└── docs/                              # Business & technical documentation
+│   ├── migrations/
+│   │   └── 001_init.sql               # Complete schema (customers, tickets, ticket_events, sms_log)
+│   └── seed.sql                       # Seed data for pilot customer
+│
+├── scripts/                           # Utility scripts (onboarding, etc.)
+│
+├── docs/
+│   ├── platform/                      # Generic OpsFabric documentation
+│   ├── customers/                     # Per-customer profiles and configs
+│   └── internal/                      # Architecture decisions, changelog
+│
+└── public/                            # Static assets
 ```
 
-## Database Schema Principles
-
-**Multi-tenancy:** Every table with customer data includes `customer_id UUID REFERENCES customers(id)`.
+## Database Schema
 
 **Core Tables:**
-- `customers` — Tenant configuration (slug, phone, Twilio number, SLA settings, quiet hours)
-- `tickets` — System of record for all customer interactions (source, status, intent, urgency, contact info, dedupe_key)
-- `ticket_events` — Audit log for ticket lifecycle
-- `sms_log` — SMS delivery tracking
+- `customers` — Tenant config (slug, phone, email, sms_number, SLA settings, quiet hours, `config` JSONB for services/intents/reviews/hero)
+- `tickets` — System of record (source, status, intent, urgency, contact info, dedupe_key)
+- `ticket_events` — Audit log (created, status_changed, sms_sent, sms_received, sms_failed, review_requested, review_clicked, escalated)
+- `sms_log` — SMS delivery tracking (direction, provider_id, status)
 
-**Row Level Security:** Supabase RLS policies ensure tenants only see their own data.
+**Multi-tenancy:** Every table includes `customer_id UUID REFERENCES customers(id)`. RLS enabled on tickets, ticket_events, sms_log.
 
-**Deduplication:** `dedupe_key = customer_id + normalized_phone + date_bucket` prevents duplicate tickets within the same day.
+**Deduplication:** `dedupe_key = customer_id + normalized_phone + YYYY-MM-DD` prevents duplicate tickets per day.
+
+**Customer Config JSONB:** The `customers.config` column stores all customer-specific configuration:
+- `services[]` — Service definitions (slug, name, description, features, icon)
+- `intents[]` — Wizard intent options (slug, label, service, urgency)
+- `reviews[]` — Review highlights for website
+- `hero` — Hero section content (claim, subclaim, benefits)
+- `address`, `plz`, `ort`, `contact_person`
+- `founded_year`, `generation`, `certifications`
+- `opening_hours`, `google_rating`, `google_review_count`
 
 ## Key Conventions
 
-1. **Language:** All documentation is in German. All code (variables, functions, comments) must be in English.
-2. **Customer Routing:** Use `[slug]` dynamic routes where slug maps to `customers.slug` in Supabase.
-3. **Phone Numbers:** Always normalize to E.164 format (+41...). Use a utility function for this.
-4. **Quiet Hours:** SMS sending respects `quiet_hours_start` and `quiet_hours_end` from customer config (default 21:00–07:00), except for `urgency=HIGH`.
+1. **Language:** Documentation in German. Code (variables, functions, comments) in English.
+2. **Customer Routing:** `[slug]` dynamic routes. Slug maps to `customers.slug` in Supabase.
+3. **Phone Numbers:** Always E.164 format (+41...). Use `normalizePhone()` from `lib/phone.ts`.
+4. **Quiet Hours:** SMS respects `quiet_hours_start`/`quiet_hours_end` (default 21:00–07:00), except `urgency=HIGH`.
 5. **SLA Calculation:** `sla_deadline = created_at + sla_response_minutes`, pausing during quiet hours.
-6. **Ticket Sources:** Valid values: `wizard`, `missed_call`, `sms_reply`, `whatsapp`, `email`, `manual`.
-7. **Ticket Statuses:** `NEW` → `NEEDS_CALLBACK` → `SCHEDULED` → `IN_PROGRESS` → `DONE` → `CLOSED`.
+6. **Ticket Sources:** `wizard`, `missed_call`, `sms_reply`, `whatsapp`, `email`, `manual`
+7. **Ticket Statuses:** `NEW` → `NEEDS_CALLBACK` → `SCHEDULED` → `IN_PROGRESS` → `DONE` → `CLOSED`
+8. **Modules:** Customer features controlled via `customers.modules` JSONB: `{ website, missed_call, sms, review_engine }`
 
 ## API Routes
 
 ### POST /api/ticket
 Create or update ticket from wizard submission.
 - Input: `{ customer_slug, source, intent, urgency, contact_name, contact_phone, contact_email, summary, metadata }`
-- Flow: Validate → Dedupe check → Insert/update ticket → Send confirmation SMS → Route to customer inbox
+- Flow: Validate → Lookup customer → Normalize phone → Dedupe check → Insert/update → Log event → Send confirmation SMS → Log SMS
+- Returns: `{ ticket_id, confirmation_sent, dedupe_matched }`
 
-### POST /api/webhook/twilio-call
-Handle Twilio missed call webhook.
-- Flow: Identify customer by `To` number → Check dedupe → Wait 30-60s → Send missed call SMS → Create ticket
+### POST /api/webhook/missed-call
+Handle missed call webhooks (form-encoded or JSON).
+- Identifies customer by `To` number (matches `sms_number` or `phone`)
+- 15-minute dedupe window via sms_log
+- Sends missed-call SMS with 1/2/3 reply options
+- Weekend detection → different template
 
-### POST /api/webhook/twilio-sms
-Handle Twilio SMS reply webhook.
-- Flow: Identify customer → Parse body (1/2/3 or freetext) → Update ticket → Send confirmation
+### POST /api/webhook/sms-reply
+Handle inbound SMS replies (form-encoded or JSON).
+- Parses reply: "1" → HIGH/NEW, "2" → MED/NEEDS_CALLBACK, "3" → wizard link (no ticket), freetext → MED/NEW
+- Dedupes via generateDedupeKey
+- Sends confirmation SMS per reply type
 
 ### POST /api/cron/review-request
-Periodic job (every 15 min) to send review requests.
-- Flow: Query tickets with `status=DONE AND job_completed_at + review_delay < now() AND review_request_sent_at IS NULL` → Send review SMS → Update ticket
+Periodic job (every 15 min). **Requires `CRON_SECRET` (always, even if env var unset).**
+- Queries: status=DONE, review_request_sent_at IS NULL, job_completed_at + delay passed
+- Sends review SMS, updates ticket, logs event
 
 ## Environment Variables
 
 Required in `.env.local` and Vercel:
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_ANON_KEY=sb_publishable_...
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_...
 
-TWILIO_ACCOUNT_SID=AC...
-TWILIO_AUTH_TOKEN=...
-TWILIO_PHONE_NUMBER=+41...
+APP_BASE_URL=https://opsfabricpilot.vercel.app
 
-NEXT_PUBLIC_APP_URL=https://doerfler.flowsight.ch
+# SMS Provider: "console" (dev), "ecall" (production)
+SMS_PROVIDER=console
+
+# eCall credentials (production)
+# ECALL_USERNAME=
+# ECALL_PASSWORD=
+# ECALL_SENDER_ID=
+
+# Cron authentication
+# CRON_SECRET=
+
+# Root redirect (optional)
+# DEFAULT_CUSTOMER_SLUG=doerfler-ag
 ```
 
 ## Development Workflow
 
-1. **Branch Strategy:** Work on `dev` branch, merge to `main` for production deploy
-2. **Vercel:** Auto-deploys `main` to production, `dev` to preview
-3. **Supabase Migrations:** Apply via `supabase db push` (manual in Phase 1, automated later)
-4. **Testing:** Run locally with `npm run dev`, test against Supabase dev instance
-
-## Twilio Webhook Validation
-
-All `/api/webhook/twilio-*` routes must validate Twilio signatures using `twilio.validateRequest()` to prevent unauthorized calls.
-
-## Error Handling
-
-- **SMS Delivery Failures:** Log to `ticket_events`, retry after 5 min (max 2 retries)
-- **Quiet Hours:** Queue SMS to send at `quiet_hours_end`
-- **Duplicate Submissions:** Use dedupe_key to prevent duplicate tickets
-
-## Phase Plan
-
-- **Phase 1 (Weeks 1-3):** Website + Wizard + Ticket backend + Confirmation SMS (Dörfler AG live)
-- **Phase 2 (Weeks 3-4):** Missed Call Recovery via Twilio
-- **Phase 3 (Weeks 5-6):** Dashboard + Review Engine + Reporting
-- **Phase 4 (Weeks 7-8):** Multi-tenancy + Onboarding wizard + 2nd customer
-- **Phase 5 (Weeks 9-12):** WhatsApp channel + Retention flows + Regional scaling
-
-We are currently in the early stages of Phase 1.
-
-## Security
-
-- Use Supabase RLS for tenant isolation
-- Validate all Twilio webhooks with signature verification
-- Never expose `SUPABASE_SERVICE_ROLE_KEY` client-side
-- Use Vercel Edge Middleware for rate limiting on API routes
-- HTTPS everywhere (Vercel default)
+1. **Branch Strategy:** Push directly to `main` (auto-deploys to Vercel production)
+2. **Supabase Migrations:** Execute via Supabase SQL Editor or pg client
+3. **Testing:** `npm run dev` locally, smoke test against production endpoints
+4. **Build Check:** `npx next build` must pass with 0 errors before committing
 
 ## SMS Templates
 
-See `docs/08_SMS_Templates.md` for all SMS templates. Templates use variables like `{name}`, `{betrieb}`, `{sla_zeit}`, etc.
+All templates in `lib/sms/templates.ts`. German, Sie-Form. Variables via template literal interpolation.
 
-**Key Template Functions:**
-- `getConfirmationSMS(source, urgency, customerName, slaDeadline)`
-- `getMissedCallSMS(customerName)`
-- `getReviewRequestSMS(customerName, reviewLink)`
+**Template Functions:**
+- `missedCallInitialSms(vars)` / `missedCallWeekendSms(vars)` — Missed call auto-reply
+- `replyUrgentSms(vars)` / `replyCallbackSms(vars)` / `replyWizardSms(vars)` / `replyFreetextSms(vars)` — SMS reply confirmations
+- `wizardConfirmationStandard(vars)` / `wizardConfirmationUrgent(vars)` / `wizardConfirmationOfferte(vars)` — Wizard confirmations
+- `reviewRequestSms(vars)` — Review request after job completion
+- `getConfirmationSms(source, urgency, vars)` — Selector function
 
-## Pilot Customer: Dörfler AG
+**Template Variables:** `{ betrieb, name, phone, sla_zeit, wizard_link, review_link }`
 
-- **Slug:** `doerfler-ag`
-- **Company:** Dörfler AG, Hubstrasse 30, 8942 Oberrieden
-- **Phone:** +41 43 443 52 00
-- **Email:** info@doerflerag.ch
-- **Services:** Sanitär (plumbing), Heizung (heating), Spenglerei (roofing), Blitzschutz, Solartechnik
-- **Founded:** 1926 (100 years old, family business, 3rd generation)
+## Security
 
-## Multi-Tenant Considerations
-
-- Each customer has a unique `slug` used in URL routing (`/{slug}/anfrage`)
-- Customer configuration (colors, logo, services, contact info) stored in `customers` table
-- Until Phase 4, customer config can be static TypeScript files in `config/customers/`
-- After Phase 4, make customer config fully DB-driven with onboarding wizard
+- Supabase RLS for tenant isolation
+- CRON_SECRET required for cron endpoints (rejects if unset)
+- Never expose `SUPABASE_SERVICE_ROLE_KEY` client-side
+- Webhook endpoints support form-encoded (production) and JSON (testing)
+- HTTPS everywhere (Vercel default)
+- `.env.local` in `.gitignore` — never committed

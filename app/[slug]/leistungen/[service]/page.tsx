@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, ArrowLeft, Phone, CheckCircle, Droplets, Flame, Home, Zap, Sun, Construction, Wrench } from "lucide-react";
-import { getCustomerBySlug } from "@/config/customers/doerfler-ag";
+import { getCustomerBySlug } from "@/lib/customer";
 import { formatPhoneDisplay, formatPhoneTel } from "@/lib/phone";
 import { CtaSection } from "@/components/sections/cta-section";
 import type { Metadata } from "next";
@@ -16,7 +16,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; service: string }> }): Promise<Metadata> {
   const { slug, service: serviceSlug } = await params;
-  const customer = getCustomerBySlug(slug);
+  const customer = await getCustomerBySlug(slug);
   if (!customer) return {};
   const service = customer.config.services?.find((s) => s.slug === serviceSlug);
   if (!service) return {};
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ServiceDetailPage({ params }: PageProps) {
   const { slug, service: serviceSlug } = await params;
-  const customer = getCustomerBySlug(slug);
+  const customer = await getCustomerBySlug(slug);
   if (!customer) notFound();
 
   const service = customer.config.services?.find((s) => s.slug === serviceSlug);

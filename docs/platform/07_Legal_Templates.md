@@ -76,10 +76,10 @@ Wir geben Ihre Daten nur weiter, soweit dies zur Erbringung unserer Dienstleistu
 |-----------|-------|----------|
 | FlowSight GmbH | Technischer Betrieb der Website und des Anfrage-Systems | Schweiz |
 | Supabase Inc. | Datenbank-Hosting (EU-Region Frankfurt) | EU (Deutschland) |
-| Twilio Inc. | SMS-Versand und Anrufweiterleitung | USA* |
+| eCall.ch / SMS-Provider | SMS-Versand | Schweiz / EU |
 | Vercel Inc. | Website-Hosting | Global (Edge) |
 
-*Für US-basierte Dienstleister bestehen angemessene Garantien (Standardvertragsklauseln oder gleichwertige Schutzmassnahmen).
+*Für Dienstleister ausserhalb der Schweiz bestehen angemessene Garantien (Standardvertragsklauseln oder gleichwertige Schutzmassnahmen).
 
 Wir verkaufen Ihre Daten nicht und nutzen sie nicht für Werbezwecke Dritter.
 

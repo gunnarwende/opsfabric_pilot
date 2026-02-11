@@ -26,6 +26,18 @@ export type SmsDirection = "outbound" | "inbound";
 
 // --- Database Models ---
 
+export interface CustomerModules {
+  website?: boolean;
+  wizard?: boolean;
+  missed_call?: boolean;
+  review_engine?: boolean;
+  sms?: boolean;
+  whatsapp?: boolean;
+  email?: boolean;
+  voice_agent?: boolean;
+  dashboard?: boolean;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -42,6 +54,7 @@ export interface Customer {
   review_delay_hours: number;
   plan: CustomerPlan;
   config: CustomerConfig;
+  modules: CustomerModules;
   onboarded_at: string | null;
   active: boolean;
   created_at: string;

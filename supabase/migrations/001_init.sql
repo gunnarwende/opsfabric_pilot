@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS customers (
   review_delay_hours INT DEFAULT 2,
   plan TEXT DEFAULT 'pilot' CHECK (plan IN ('pilot','starter','pro','premium')),
   config JSONB DEFAULT '{}',
+  modules JSONB DEFAULT '{"website": true, "wizard": true, "missed_call": true, "review_engine": true, "sms": true}',
   onboarded_at TIMESTAMPTZ,
   active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now(),
